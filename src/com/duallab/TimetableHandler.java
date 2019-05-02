@@ -4,6 +4,8 @@ import java.io.*;
 import java.sql.Time;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -16,7 +18,7 @@ public abstract class TimetableHandler {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inStream));
             String serviceString;
             while((serviceString = bufferedReader.readLine()) != null){
-                timetable.addService(createService(serviceString));
+                timetable.addService(Service.parse(serviceString));
             }
         }catch (IOException e){
             e.printStackTrace();
@@ -27,9 +29,7 @@ public abstract class TimetableHandler {
         File output = new File("output.txt");
         try(FileWriter fileWriter = new FileWriter(output)){
             output.createNewFile();
-
-            String text = timetable.toString();
-            fileWriter.write(text);
+            fileWriter.write(timetable.toString());
             fileWriter.flush();
 
         }catch (IOException e){
@@ -37,20 +37,7 @@ public abstract class TimetableHandler {
         }
 
     }
-    private static Service createService(String string){
-        String[] fields = string.split(" ");
-        Companies company = Companies.valueOf(fields[0]);
-        Date departureTime = null;
-        Date arrivalTime = null;
-        SimpleDateFormat format = new SimpleDateFormat("HH:mm");
-        try {
-            departureTime = format.parse(fields[1]);
-            arrivalTime = format.parse(fields[2]);
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return new Service(company,departureTime,arrivalTime);
-    }
+
     public static Timetable getRefactoredTimetable(Timetable timetable){
         Timetable newTimetable = new Timetable();
         for(Service service : timetable.getServices()){
@@ -63,55 +50,44 @@ public abstract class TimetableHandler {
         return newTimetable;
     }
     private static void removeTooLongService(Timetable timetable){
-        int hour = 3600000;
-        List<Service> services = timetable.getServices();
-        for (int i = 0; i < timetable.getServices().size(); i++){
-            if(services.get(i).getArrivalTimeInMilisec() - services.get(i).getDepartureTimeInMilisec() >= hour){
-                timetable.removeService(i--);
-            }
-        }
+        Duration maxTravelDuration = Duration.ofHours(1);
+        timetable.getServices().removeIf(
+                service -> Duration.between(service.getArrivalTime(), service.getDepartureTime())
+                        .compareTo(maxTravelDuration) > 0
+        );
     }
     private static void removeTheSameServices(Timetable timetable){
-        List<Service> services = timetable.getServices();
-        for(int i=0;i < services.size();i++){
-            Service posh = services.get(i);
-            if(posh.getCompany() == Companies.Posh){
-                for(int j = 0;j < services.size();j++ ){
-                    Service grotty = services.get(j).getCompany()==Companies.Grotty ? services.get(j) : null;
-                    if(grotty!= null && grotty.getDepartureTimeInMilisec()==posh.getDepartureTimeInMilisec()
-                            && grotty.getArrivalTimeInMilisec()==posh.getArrivalTimeInMilisec()){
-                        services.remove(grotty);
-                        j--;
-                        i--;
-                    }
-                }
-            }
-        }
+        timetable.getServices().removeIf(
+                service -> service.getCompany() == Companies.Grotty
+                        && timetable.getServices()
+                        .contains(new Service(Companies.Posh, service.getDepartureTime(), service.getArrivalTime()))
+        );
+
     }
     private static void sortAccordingToDepartureTime(Timetable timetable) {
-        timetable.getServices().sort((Service s1,Service s2) -> s1.getDepartureTime().compareTo(s2.getDepartureTime()));
+        timetable.getServices().sort(Comparator.comparing(Service::getDepartureTime));
     }
     private static void removeInefficientService(Timetable timetable){
         removeTooLongService(timetable);
         List<Service> services = timetable.getServices();
         for(int i = 0; i < services.size()-1; i++){
-            if(services.get(i).getDepartureTimeInMilisec()==services.get(i+1).getDepartureTimeInMilisec()){
-                if(services.get(i).getArrivalTimeInMilisec()<services.get(i+1).getArrivalTimeInMilisec()){
+            if(services.get(i).getDepartureTime().compareTo(services.get(i+1).getDepartureTime())==0){
+                if(services.get(i).getArrivalTime().compareTo(services.get(i+1).getArrivalTime())<0){
                     services.remove(i+1);
                     i--;
                 }else{
                     services.remove(i--);
                 }
             }else{
-                if(services.get(i).getDepartureTimeInMilisec()>services.get(i+1).getDepartureTimeInMilisec()){
-                    if(services.get(i).getArrivalTimeInMilisec()>services.get(i+1).getArrivalTimeInMilisec()){
+                if(services.get(i).getDepartureTime().compareTo(services.get(i+1).getDepartureTime())>0){
+                    if(services.get(i).getArrivalTime().compareTo(services.get(i+1).getArrivalTime())>0){
                         continue;
                     }else{
                         services.remove(i+1);
                         i--;
                     }
                 }else{
-                    if(services.get(i).getArrivalTimeInMilisec()< services.get(i+1).getArrivalTimeInMilisec()){
+                    if(services.get(i).getArrivalTime().compareTo(services.get(i+1).getArrivalTime())<0){
                         continue;
                     }else{
                         services.remove(i--);

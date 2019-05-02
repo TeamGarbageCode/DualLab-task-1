@@ -1,14 +1,15 @@
 package com.duallab;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalTime;
+import java.util.Objects;
+
 
 public class Service {
     private Companies company;
-    private Date departureTime;
-    private Date arrivalTime;
+    private LocalTime departureTime;
+    private LocalTime arrivalTime;
 
-    public Service(Companies company, Date departureTime, Date arrivalTime) {
+    public Service(Companies company, LocalTime departureTime, LocalTime arrivalTime) {
         this.company = company;
         this.departureTime = departureTime;
         this.arrivalTime = arrivalTime;
@@ -18,32 +19,44 @@ public class Service {
         return company;
     }
 
-    public Date getDepartureTime() {
+    public LocalTime getDepartureTime() {
         return departureTime;
     }
-    public long getDepartureTimeInMilisec(){
-        return departureTime.getTime();
-    }
 
-    public Date getArrivalTime() {
+    public LocalTime getArrivalTime() {
         return arrivalTime;
-    }
-    public long getArrivalTimeInMilisec(){
-        return arrivalTime.getTime();
     }
 
     @Override
     public String toString() {
-        SimpleDateFormat format = new SimpleDateFormat("HH:mm");
-        return  company.toString() + " " + format.format(departureTime) + " " + format.format(arrivalTime);
+        return  company.toString() + " " + departureTime + " " + arrivalTime;
     }
-//
-//    @Override
-//    public String toString() {
-//        return "Service{" +
-//                "company=" + company +
-//                ", departureTime=" + departureTime +
-//                ", arrivalTime=" + arrivalTime +
-//                '}';
-//    }
+
+    public static Service parse(String string){
+        String[] fields = string.split(" ");
+
+        Companies company = Companies.valueOf(fields[0]);
+
+        LocalTime departureTime = null;
+        LocalTime arrivalTime   = null;
+        try {
+            departureTime = LocalTime.parse(fields[1]);
+            arrivalTime   = LocalTime.parse(fields[2]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new Service(company, departureTime, arrivalTime);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this==o){
+            return true;
+        }
+        if(o == null && getClass() != o.getClass()){
+            return false;
+        }
+        Service obj = (Service) o;
+        return obj.company.equals(company) && obj.departureTime.equals(departureTime) && obj.arrivalTime.equals(arrivalTime);
+    }
 }

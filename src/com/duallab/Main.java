@@ -7,10 +7,7 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         String path = scanner.nextLine();
         Timetable timetable = readTimetableFile(path);
-        System.out.println(timetable);
-        System.out.println("-----------------");
         Timetable newTimetable = getRefactoredTimetable(timetable);
-        System.out.println(newTimetable);
         TimetableHandler.writeTimetableFile(newTimetable);
     }
 }

@@ -17,24 +17,22 @@ public class Timetable {
     public void addService(Service service){
         services.add(service);
     }
-    public void removeService(int i){
-        services.remove(i);
-    }
+
     public void removeService(Service service){
         services.remove(services.indexOf(service));
     }
     public String toString() {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         Companies prevCompany = services.get(0).getCompany();
 
         for(Service service : services){
             if(prevCompany != service.getCompany()){
-                result += "\n" + service +  "\n";
+                result.append("\n").append(service).append("\n");
                 prevCompany = service.getCompany();
             }else{
-                result += service + "\n";
+                result.append(service).append("\n");
             }
         }
-        return result;
+        return result.toString();
     }
 }
